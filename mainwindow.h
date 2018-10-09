@@ -33,6 +33,9 @@ private:
 
 
 private slots:
+    void menuExit();
+    void updateRanges();
+
     void load_cut();
     void start_meas_thread();
     void refresh_data();
@@ -40,6 +43,7 @@ private slots:
     void end_mis();
     void set_overwrite_graph();
     void update_prog();
+
     void scatter_plot();
     void polar_plot();
 };

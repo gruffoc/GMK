@@ -17,6 +17,7 @@ using namespace QtCharts;
 MainWindow *ptr_mainwindow;
 motor_par mot1;
 QScatterSeries *measure;
+QSplineSeries *measure_spline;
 QPolarChart *chartp;
 QChart *chartl;
 QChartView *view;
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     measure = new QScatterSeries;
+    measure_spline = new QSplineSeries;
     ptr_mainwindow = new MainWindow;
     ptr_mainwindow->setFixedSize(640,640);
     ptr_mainwindow->show();

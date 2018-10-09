@@ -2,6 +2,7 @@
 #include "unistd.h"
 #include <iostream>
 
+#include <ctime>
 #include <QString>
 #include <QtCharts/QChart>
 #include <QtCharts/QScatterSeries>
@@ -19,6 +20,7 @@ using namespace QtCharts;
 extern MainWindow *ptr_mainwindow;
 
 extern QScatterSeries *measure;
+extern QSplineSeries *measure_spline;
 extern QPolarChart *chartp;
 extern QChart *chartl;
 extern QChartView *view;
@@ -42,18 +44,19 @@ Misura::~Misura()
 
 void Misura::perform_measure()
 {
+    srand((unsigned)time(NULL));
     if(measure_number==0){
         emit start();
         double N_point = 10.0;
         if(!graph_show) measure->clear();
 
             for(int i=0; i<10; i++){
-                measure->append(i*7, (i / 100) * 100 + 8.0);
-                std::cout << i << std::endl;
-                sleep(1);
-                view->update();
                 compl_perc = ((double(i)+1.0)/N_point)*100;
                 emit update_progress();
+                measure->append(i*7, double(i)*100.0*rand()/double(RAND_MAX) );
+                measure_spline->append(i*7, double(i)*100.0*rand()/double(RAND_MAX) );
+                view->update();
+                sleep(1);
             }
             emit finished();
     }else{
@@ -62,13 +65,14 @@ void Misura::perform_measure()
         if(!graph_show) measure->clear();
 
             for(int i=0; i<10; i++){
-                measure->append(i*(7+measure_number*10), (i / 100) * 100 + 8.0);
-                std::cout << i << std::endl;
-                sleep(1);
-                measure->setName("Radiation Pattern N."+QString::number(measure_number));
-                view->update();
                 compl_perc = ((double(i)+1.0)/N_point)*100;
                 emit update_progress();
+                measure->setName("Radiation Pattern N."+QString::number(measure_number));
+                measure_spline->setName("Radiation Pattern Spline N."+QString::number(measure_number));
+                measure->append(i*(7+measure_number*10), double(i)*100.0*rand()/double(RAND_MAX));
+                measure_spline->append(i*(7+measure_number*10), double(i)*100.0*rand()/double(RAND_MAX));
+                view->update();
+                sleep(1);
             }
             emit finished();
 

@@ -25,11 +25,16 @@ using namespace QtCharts;
 QThread *tt_mis;
 Misura *mis;
 
+double yMin = 0;
+double yMax = 10;
 
+double xMin = 0;
+double xMax = 10;
 
 
 extern motor_par mot1;
 extern QScatterSeries *measure;
+extern QSplineSeries *measure_spline;
 extern QPolarChart *chartp;
 extern QChart *chartl;
 extern QChartView *view;
@@ -69,15 +74,27 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->checkBox,SIGNAL(clicked(bool)),this,SLOT(set_overwrite_graph()));
     connect(ui->rdb_polar,SIGNAL(clicked(bool)),this,SLOT(polar_plot()));
     connect(ui->rdb_scat,SIGNAL(clicked(bool)),this,SLOT(scatter_plot()));
+    connect(ui->update_ranges,SIGNAL(clicked(bool)),this,SLOT(updateRanges()));
 
 
+
+    connect(ui->actionExit,SIGNAL(triggered(bool)),this,SLOT(close()));
+    connect(ui->actionExit,SIGNAL(triggered(bool)),this,SLOT(menuExit()));
+
+    connect(ui->Load_cut, SIGNAL(clicked(bool)), this, SLOT(load_cut()));
 
 
     measure->setName("Radiation Pattern");
+    measure_spline->setName("Spline");
 
 
-    for (int i = -100; i <= 100; i += 10)
+    for (int i = -90; i <= 90; i += 10){
         measure->append(i, i);
+        measure_spline->append(i,i);
+    }
+
+
+
 
     //setting up radiation pattern plot canvas
 
@@ -87,35 +104,53 @@ MainWindow::MainWindow(QWidget *parent) :
     radialAxis = new QValueAxis();
     angularAxis = new QValueAxis();
 
-    chartp->addSeries(measure);
-    //chartl->addSeries(measure);
+    chartl->addSeries(measure_spline);
+    chartl->addSeries(measure);
+
     measure->clear();
-    view->setChart(chartp);
-    view->setRenderHint(QPainter::Antialiasing);
-    angularAxis->setTickCount(9); // First and last ticks are co-located on 0/360 angle.
-    angularAxis->setLabelFormat("%.1f");
-    angularAxis->setShadesVisible(true);
-    angularAxis->setShadesBrush(QBrush(QColor(249, 249, 255)));
-    chartp->addAxis(angularAxis, QPolarChart::PolarOrientationAngular);
-    radialAxis->setTickCount(9);
-    radialAxis->setLabelFormat("%d");
-    chartp->addAxis(radialAxis, QPolarChart::PolarOrientationRadial);
-    measure->attachAxis(radialAxis); // qui forse c'è la risposta al multiplot - fare più assi
-    measure->attachAxis(angularAxis);
+    measure_spline->clear();
+    chartl->createDefaultAxes();
+    view->setChart(chartl);
 
 
+    connect(measure, &QScatterSeries::pointAdded,[=](int index){
+        qreal y = measure->at(index).y();
+        if(y<yMin || y > yMax){
+            if(y<yMin) yMin = y;
+            if(y>yMax) yMax = y;
+            chartl->axisY()->setRange(yMin-5,yMax+5);
+            view->update();
+        }});
+    connect(measure, &QScatterSeries::pointAdded,[=](int index){
+        qreal x = measure->at(index).x();
+        if(x < xMin || x > xMax){
+            if(x < xMin) xMin = x;
+            if(x > xMax) xMax = x;
+            chartl->axisX()->setRange(xMin-5,xMax+5);
+            view->update();
+        }});
 
+    connect(measure_spline, &QSplineSeries::pointAdded,[=](int index){
+        qreal y = measure_spline->at(index).y();
+        if(y<yMin || y > yMax){
+            if(y<yMin) yMin = y;
+            if(y>yMax) yMax = y;
+            chartl->axisY()->setRange(yMin-5,yMax+5);
+            view->update();
+        }});
+    connect(measure_spline, &QSplineSeries::pointAdded,[=](int index){
+        qreal x = measure_spline->at(index).x();
+        if(x < xMin || x > xMax){
+            if(x < xMin) xMin = x;
+            if(x > xMax) xMax = x;
+            chartl->axisX()->setRange(xMin-5,xMax+5);
+            view->update();
+        }});
     //setting up the radiation pattern interface
     g_rad.setFixedSize(600,480);
     g_rad.setCentralWidget(view);
     g_rad.show();
-    std::cout << "Show" << std::endl;
 
-
-
-
-
-    connect(ui->Load_cut, SIGNAL(clicked(bool)), this, SLOT(load_cut()));
 
 
 }
@@ -143,6 +178,7 @@ void MainWindow::start_meas_thread()
 
 void MainWindow::refresh_data()
 {
+    measure_spline->clear();
     measure->clear();
     view->update();
 }
@@ -177,13 +213,10 @@ void MainWindow::set_overwrite_graph()
 
 void MainWindow::scatter_plot()
 {
-    angularAxis->setRange(0, 100);
-    angularAxis->setTickCount(1);
-    angularAxis->setLabelFormat("%.2f");
-    chartl->addSeries(measure);
-    chartl->createDefaultAxes();
-    chartl->axisX()->setRange(0,100);
-    chartl->axisY()->setRange(0,100);
+
+
+    //chartl->addSeries(measure);
+    //chartl->createDefaultAxes();
     view->setChart(chartl);
     view->update();
 
@@ -192,31 +225,27 @@ void MainWindow::scatter_plot()
 
 void MainWindow::polar_plot()
 {
-
-    angularAxis->setTickCount(9); // First and last ticks are co-located on 0/360 angle.
-    angularAxis->setLabelFormat("%.1f");
-    angularAxis->setShadesVisible(true);
-    angularAxis->setShadesBrush(QBrush(QColor(249, 249, 255)));
-    chartp->addAxis(radialAxis, QPolarChart::PolarOrientationRadial);
     chartp->addSeries(measure);
-
-    radialAxis->setTickCount(9);
-    radialAxis->setLabelFormat("%d");
-
+    chartp->createDefaultAxes();
     view->setChart(chartp);
-    view->setRenderHint(QPainter::Antialiasing);
-
 }
 
 
+void MainWindow::menuExit()
+{
+    delete chartl;
+    delete chartp;
+    g_rad.close();
+    this->close();
+}
 
+void MainWindow::updateRanges()
+{
+    chartl->axisX()->setRange(ui->text_xmin->toPlainText().toDouble(), ui->text_xmax->toPlainText().toDouble());
+    chartl->axisY()->setRange(ui->text_ymin->toPlainText().toDouble(), ui->text_ymax->toPlainText().toDouble());
+    view->update();
 
-
-
-
-
-
-
+}
 
 
 
