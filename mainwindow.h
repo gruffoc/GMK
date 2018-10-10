@@ -46,6 +46,8 @@ private slots:
 
     void scatter_plot();
     void polar_plot();
+
+    void activateManualRanges();
 };
 
 #endif // MAINWINDOW_H

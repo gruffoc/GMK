@@ -17,6 +17,7 @@
 #include <QtCharts/QPolarChart>
 #include <QtCharts/QChartView>
 #include <QThread>
+#include <QPushButton>
 
 
 
@@ -62,6 +63,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     mis->moveToThread(tt_mis);
 
+
+    ui->text_xmax->setDisabled(true);
+    ui->text_xmin->setDisabled(true);
+    ui->text_ymax->setDisabled(true);
+    ui->text_ymin->setDisabled(true);
+
     connect(tt_mis,SIGNAL(started()),mis,SLOT(perform_measure()));
     connect(ui->start_meas,SIGNAL(clicked(bool)),this,SLOT(start_meas_thread()));
     connect(ui->refresh, SIGNAL(clicked(bool)), this, SLOT(refresh_data()));
@@ -74,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->checkBox,SIGNAL(clicked(bool)),this,SLOT(set_overwrite_graph()));
     connect(ui->rdb_polar,SIGNAL(clicked(bool)),this,SLOT(polar_plot()));
     connect(ui->rdb_scat,SIGNAL(clicked(bool)),this,SLOT(scatter_plot()));
-    connect(ui->update_ranges,SIGNAL(clicked(bool)),this,SLOT(updateRanges()));
+    //connect(ui->update_ranges,SIGNAL(clicked(bool)),this,SLOT(updateRanges()));
 
 
 
@@ -82,6 +89,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionExit,SIGNAL(triggered(bool)),this,SLOT(menuExit()));
 
     connect(ui->Load_cut, SIGNAL(clicked(bool)), this, SLOT(load_cut()));
+
+    connect(ui->text_xmin,SIGNAL(textChanged()),this,SLOT(updateRanges()));
+    connect(ui->text_xmax,SIGNAL(textChanged()),this,SLOT(updateRanges()));
+    connect(ui->text_ymin,SIGNAL(textChanged()),this,SLOT(updateRanges()));
+    connect(ui->text_ymax,SIGNAL(textChanged()),this,SLOT(updateRanges()));
+
+    connect(ui->checkBox_2, SIGNAL(clicked(bool)),this,SLOT(activateManualRanges()));
+
 
 
     measure->setName("Radiation Pattern");
@@ -172,7 +187,24 @@ void MainWindow::load_cut(){
 
 void MainWindow::start_meas_thread()
 {
-    tt_mis->start();
+    if(measure_number==0){
+        tt_mis->start();
+    }else{
+
+
+        measure = new QScatterSeries;
+        //measure_spline = new QSplineSeries;
+        for (int i = -90; i <= 90; i += 10){
+            measure->append(i, i);
+            measure->clear();
+
+        }
+        chartl->addSeries(measure);
+        chartl->createDefaultAxes();
+        view->setChart(chartl);
+        tt_mis->start();
+
+    }
 }
 
 
@@ -197,6 +229,7 @@ void MainWindow::update_prog()
 
 void MainWindow::end_mis()
 {
+    ui->meas_log->setText("Measure N."+QString::number(measure_number)+"\nCompleted.");
     tt_mis->exit();
 }
 
@@ -241,11 +274,25 @@ void MainWindow::menuExit()
 
 void MainWindow::updateRanges()
 {
-    chartl->axisX()->setRange(ui->text_xmin->toPlainText().toDouble(), ui->text_xmax->toPlainText().toDouble());
-    chartl->axisY()->setRange(ui->text_ymin->toPlainText().toDouble(), ui->text_ymax->toPlainText().toDouble());
+    //std::cout << tt_mis->currentThreadId() << std::endl;
+    if(ui->text_xmax->toPlainText() != "" || ui->text_xmin->toPlainText() != "" ) chartl->axisX()->setRange(ui->text_xmin->toPlainText().toDouble(), ui->text_xmax->toPlainText().toDouble());
+    if(ui->text_ymax->toPlainText() != "" || ui->text_ymin->toPlainText() != "" ) chartl->axisY()->setRange(ui->text_ymin->toPlainText().toDouble(), ui->text_ymax->toPlainText().toDouble());
     view->update();
 
 }
 
-
+void MainWindow::activateManualRanges()
+{
+    if(ui->checkBox_2->isChecked()){
+        ui->text_xmin->setEnabled(true);
+        ui->text_xmax->setEnabled(true);
+        ui->text_ymin->setEnabled(true);
+        ui->text_ymax->setEnabled(true);
+    }else{
+        ui->text_xmax->setDisabled(true);
+        ui->text_xmin->setDisabled(true);
+        ui->text_ymax->setDisabled(true);
+        ui->text_ymin->setDisabled(true);
+    }
+}
 
