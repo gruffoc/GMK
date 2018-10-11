@@ -3,10 +3,11 @@
 #include "user_def.h"
 #include "radpat.h"
 #include "misura.h"
-
+#include "motor.h"
 
 #include <iostream>
 #include <QStringList>
+#include <QPalette>
 #include <QFileDialog>
 #include <QtCharts/QChart>
 #include <QtCharts/QScatterSeries>
@@ -24,7 +25,11 @@
 using namespace QtCharts;
 
 QThread *tt_mis;
+QThread *tt_motor;
+
 Misura *mis;
+Motor  *mot;
+
 
 double yMin = 0;
 double yMax = 10;
@@ -58,10 +63,13 @@ MainWindow::MainWindow(QWidget *parent) :
     compl_perc = 0;
 
     //setting up the measure thread
-    tt_mis = new QThread();
+    tt_mis   = new QThread();
+    tt_motor = new QThread();
     mis = new Misura();
+    mot = new Motor();
 
     mis->moveToThread(tt_mis);
+    mot->moveToThread(tt_motor);
 
 
     ui->text_xmax->setDisabled(true);
@@ -70,6 +78,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->text_ymin->setDisabled(true);
 
     connect(tt_mis,SIGNAL(started()),mis,SLOT(perform_measure()));
+    connect(tt_motor, SIGNAL(started()),mot,SLOT(perform_motion()));
+    connect(mot,SIGNAL(GPIBconnected()),this,SLOT(connectionGPIB()));
+
+    connect(ui->btn_openGPIB,SIGNAL(clicked(bool)),this,SLOT(start_motor_thread()));
+
+
+
     connect(ui->start_meas,SIGNAL(clicked(bool)),this,SLOT(start_meas_thread()));
     connect(ui->refresh, SIGNAL(clicked(bool)), this, SLOT(refresh_data()));
 
@@ -96,6 +111,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->text_ymax,SIGNAL(textChanged()),this,SLOT(updateRanges()));
 
     connect(ui->checkBox_2, SIGNAL(clicked(bool)),this,SLOT(activateManualRanges()));
+
 
 
 
@@ -296,3 +312,14 @@ void MainWindow::activateManualRanges()
     }
 }
 
+void MainWindow::start_motor_thread()
+{
+    tt_motor->start();
+}
+void MainWindow::connectionGPIB()
+{
+    QPalette palette;
+    palette.setBrush( QPalette::Background, QBrush( Qt::green ) );
+    ui->labelStatus->setPalette(palette);
+
+}

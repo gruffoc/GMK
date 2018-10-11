@@ -6,6 +6,9 @@
 
 QT       += core gui charts
 
+QMAKE_LFLAGS += -lgpib
+QMAKE_CXXFLAGS += -std=c++0x
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = GMK
@@ -27,13 +30,15 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     radpat.cpp \
-    misura.cpp
+    misura.cpp \
+    motor.cpp
 
 HEADERS += \
         mainwindow.h \
     user_def.h \
     radpat.h \
-    misura.h
+    misura.h \
+    motor.h
 
 FORMS += \
         mainwindow.ui \

@@ -48,6 +48,9 @@ private slots:
     void polar_plot();
 
     void activateManualRanges();
+
+    void connectionGPIB();
+    void start_motor_thread();
 };
 
 #endif // MAINWINDOW_H
